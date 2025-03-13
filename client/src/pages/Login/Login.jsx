@@ -1,32 +1,50 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { FcGoogle } from "react-icons/fc";
 import useAuth from "../../hooks/useAuth";
 import toast from "react-hot-toast";
 import { TbFidgetSpinner } from "react-icons/tb";
+import { useState } from "react";
+import { fr } from "date-fns/locale";
 
 const Login = () => {
-  const { signInWithGoogle, loading, signIn } = useAuth();
+  const { signInWithGoogle, loading, signIn, setLoading, resetPassword } =
+    useAuth();
+  const [email, setEmail] = useState("");
   const navigate = useNavigate();
+  const locatioin = useLocation();
+  const from = locatioin?.state || "/";
+  console.log('route location ', from);
   const handleLogin = async (e) => {
     e.preventDefault();
     const form = e.target;
     const email = form.email.value;
     const password = form.password.value;
     try {
+      setLoading(true);
       // user login
-      const result = await signIn(email, password);
-      navigate("/");
+      await signIn(email, password);
+      navigate(from, { replace: true });
       toast.success("Sign In successfully");
     } catch (err) {
-      console.log(err);
-      toast.error(err.messsage);
+      console.log("login error ", err);
+      toast.error(err.message);
+      setLoading(false);
     }
   };
 
+  const handleResetPassword = async () => {
+    if (!email) {
+      return toast.error("You need to input a email first");
+    }
+    setLoading(true);
+    await resetPassword(email);
+    toast.success("Please check your email");
+    setLoading(false);
+  };
   const handleGooglesignup = async () => {
     try {
       await signInWithGoogle();
-      navigate("/");
+      navigate(from, { replace: true });
       toast.success("Sign Up successfully");
     } catch (err) {
       console.log(err);
@@ -56,6 +74,7 @@ const Login = () => {
                 type="email"
                 name="email"
                 id="email"
+                onBlur={(e) => setEmail(e.target.value)}
                 required
                 placeholder="Enter Your Email Here"
                 className="w-full px-3 py-2 border rounded-md border-gray-300 focus:outline-rose-500 bg-gray-200 text-gray-900"
@@ -95,7 +114,10 @@ const Login = () => {
           </div>
         </form>
         <div className="space-y-1">
-          <button className="text-xs hover:underline hover:text-rose-500 text-gray-400">
+          <button
+            onClick={handleResetPassword}
+            className="text-xs hover:underline hover:text-rose-500 text-gray-400"
+          >
             Forgot password?
           </button>
         </div>
