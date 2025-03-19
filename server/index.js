@@ -86,7 +86,7 @@ async function run() {
       const category = req.query.category;
       // console.log(typeof category)
       let query = {};
-      if (category &&  category != "null") query = { category };
+      if (category && category != "null") query = { category };
       const result = await roomsCollection.find(query).toArray();
       res.send(result);
     });
@@ -96,6 +96,21 @@ async function run() {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await roomsCollection.findOne(query);
+      res.send(result);
+    });
+
+    // get all rooms' data for a signle person
+    app.get("/my-listings/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = {'host.email': email};
+      const result = await roomsCollection.find(query).toArray();
+      console.log(result);
+      res.send(result);
+    });
+    //  save a room
+    app.post("/rooms", async (req, res) => {
+      const room = req.body;
+      const result = await roomsCollection.insertOne(room);
       res.send(result);
     });
     // Send a ping to confirm a successful connection
