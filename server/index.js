@@ -3,7 +3,12 @@ const app = express();
 require("dotenv").config();
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
-const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const {
+  MongoClient,
+  ServerApiVersion,
+  ObjectId,
+  Timestamp,
+} = require("mongodb");
 const jwt = require("jsonwebtoken");
 
 const port = process.env.PORT || 8000;
@@ -51,6 +56,7 @@ async function run() {
   try {
     const stayVistaDb = client.db("stayVista");
     const roomsCollection = stayVistaDb.collection("rooms");
+    const usersCollection = stayVistaDb.collection("users");
     // auth related api
     app.post("/jwt", async (req, res) => {
       const user = req.body;
@@ -81,6 +87,24 @@ async function run() {
       }
     });
 
+    // save users data into database
+    app.put("/users", async (req, res) => {
+      const user = req.body;
+
+      // check if user already exists
+      const isExist = await usersCollection.findOne({ email: user.email });
+      if (!isExist) return res.send(isExist);
+      const option = { upsert: true };
+      const query = { email: user.email };
+      const updatedDoc = {
+        $set: {
+          ...user,
+          Timestamp: Date.now(),
+        },
+      };
+      const result = await usersCollection.updateOne(query, updatedDoc, option);
+      res.send(result);
+    });
     // get all rooms' data
     app.get("/rooms", async (req, res) => {
       const category = req.query.category;
@@ -102,7 +126,7 @@ async function run() {
     // get all rooms' data for a signle person
     app.get("/my-listings/:email", async (req, res) => {
       const email = req.params.email;
-      const query = {'host.email': email};
+      const query = { "host.email": email };
       const result = await roomsCollection.find(query).toArray();
       console.log(result);
       res.send(result);
@@ -111,6 +135,14 @@ async function run() {
     app.post("/rooms", async (req, res) => {
       const room = req.body;
       const result = await roomsCollection.insertOne(room);
+      res.send(result);
+    });
+
+    // delete a room
+    app.delete("/rooms/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await roomsCollection.deleteOne(query);
       res.send(result);
     });
     // Send a ping to confirm a successful connection
