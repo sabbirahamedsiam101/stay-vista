@@ -4,10 +4,36 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import useAuth from "../../../hooks/useAuth";
 import avatarImg from "../../../assets/images/placeholder.jpg";
-
+import HostModal from "../../Modal/HostRequestModal";
+import useAxiosSecure from "../../../hooks/useAxiosSecure";
+import  toast  from "react-hot-toast";
 const Navbar = () => {
   const { user, logOut } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
+  const axiosSecure = useAxiosSecure();
+
+  // for modal
+  const [isOpenModal, setIsOpenModal] = useState(false);
+  const closeModal = () => setIsOpenModal(false);
+  const modalHandler = async () => {
+    console.log("i want to be a host");
+    closeModal();
+    try {
+      const currentUser = {
+        email: user?.email,
+        role: "guest",
+        status: "requested",
+      };
+      console.log(currentUser);
+      const { data } = await axiosSecure.put(`/users`, currentUser);
+      if(data.modifiedCount > 0) {
+        toast.success('Request sent successfully');
+      }
+      return data;
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
   return (
     <div className="fixed w-full bg-white z-10 shadow-sm">
@@ -29,8 +55,9 @@ const Navbar = () => {
               <div className="flex flex-row items-center gap-3">
                 {/* Become A Host btn */}
                 <div className="hidden md:block">
-                  {!user && (
+                  {user && (
                     <button
+                      onClick={() => setIsOpenModal(true)}
                       disabled={!user}
                       className="disabled:cursor-not-allowed cursor-pointer hover:bg-neutral-100 py-3 px-4 text-sm font-semibold rounded-full  transition"
                     >
@@ -39,6 +66,12 @@ const Navbar = () => {
                   )}
                 </div>
                 {/* Dropdown btn */}
+                {/* modal */}
+                <HostModal
+                  closeModal={closeModal}
+                  isOpen={isOpenModal}
+                  modalHandler={modalHandler}
+                />
                 <div
                   onClick={() => setIsOpen(!isOpen)}
                   className="p-4 md:py-1 md:px-2 border-[1px] border-neutral-200 flex flex-row items-center gap-3 rounded-full cursor-pointer hover:shadow-md transition"

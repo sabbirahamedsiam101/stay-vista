@@ -10,6 +10,7 @@ const {
   Timestamp,
 } = require("mongodb");
 const jwt = require("jsonwebtoken");
+// const { use } = require("react");
 
 const port = process.env.PORT || 8000;
 
@@ -90,12 +91,21 @@ async function run() {
     // save users data into database
     app.put("/users", async (req, res) => {
       const user = req.body;
-
-      // check if user already exists
-      const isExist = await usersCollection.findOne({ email: user.email });
-      if (!isExist) return res.send(isExist);
       const option = { upsert: true };
       const query = { email: user.email };
+      // check if user already exists
+      const isExist = await usersCollection.findOne(query);
+      if (isExist) {
+        if (user.status === "requested") {
+          const result = await usersCollection.updateOne(query, {
+            $set: { status: user.status },
+          });
+          return res.send(result);
+        }
+      } else {
+       return res.send(isExist);
+      }
+
       const updatedDoc = {
         $set: {
           ...user,
@@ -103,6 +113,12 @@ async function run() {
         },
       };
       const result = await usersCollection.updateOne(query, updatedDoc, option);
+      res.send(result);
+    });
+
+    // get all users' data
+    app.get("/users", async (req, res) => {
+      const result = await usersCollection.find().toArray();
       res.send(result);
     });
     // get all rooms' data
